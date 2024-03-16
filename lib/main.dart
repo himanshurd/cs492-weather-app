@@ -142,8 +142,11 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: Text(widget.title),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Text(
+          widget.title,
+          style: TextStyle(color: Colors.white), // Text color
+        ),
+        backgroundColor: Color.fromARGB(255, 11, 129, 226), // Background color
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),

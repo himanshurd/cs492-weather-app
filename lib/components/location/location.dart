@@ -44,7 +44,6 @@ class _LocationState extends State<Location> {
 
   void _setLocationsFromDatabase(List<UserLocation> locations) async {
     _locations.addAll(locations);
-  
   }
 
   void _insertLocationIntoDatabase(UserLocation location) async {

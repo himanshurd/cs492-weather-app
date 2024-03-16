@@ -11,6 +11,7 @@ class WeatherForecast {
   final String windDirection;
   final String shortForecast;
   final String detailedForecast;
+  final DateTime forecastTime; 
 
   const WeatherForecast({
     required this.name,
@@ -20,30 +21,20 @@ class WeatherForecast {
     required this.windDirection,
     required this.shortForecast,
     required this.detailedForecast,
+    required this.forecastTime, 
   });
 
   factory WeatherForecast.fromJson(Map<String, dynamic> json) {
-    return switch (json) {
-      {
-        'name': String name,
-        'isDaytime': bool isDaytime,
-        'temperature': int temperature,
-        'windSpeed': String windSpeed,
-        'windDirection': String windDirection,
-        'shortForecast': String shortForecast,
-        'detailedForecast': String detailedForecast,
-      } =>
-        WeatherForecast(
-          name: name,
-          isDaytime: isDaytime,
-          temperature: temperature,
-          windSpeed: windSpeed,
-          windDirection: windDirection,
-          shortForecast: shortForecast,
-          detailedForecast: detailedForecast,
-        ),
-      _ => throw const FormatException('Failed to load Weather Forecast.'),
-    };
+    return WeatherForecast(
+      name: json['name'],
+      isDaytime: json['isDaytime'],
+      temperature: json['temperature'],
+      windSpeed: json['windSpeed'],
+      windDirection: json['windDirection'],
+      shortForecast: json['shortForecast'],
+      detailedForecast: json['detailedForecast'],
+      forecastTime: DateTime.parse(json['startTime']),
+    );
   }
 }
 
@@ -58,35 +49,56 @@ Future<List<WeatherForecast>> getTwiceDailyForecasts(
 
 Future<List<WeatherForecast>> getWeatherForecasts(
     UserLocation location, bool hourly) async {
-  // casts latitude and longitude to strings with 2 fixed digits
-  // for example: 123.456789 -> '123.45'
+  // Casts latitude and longitude to strings with 2 fixed digits
   String lat = location.latitude.toStringAsFixed(2);
   String long = location.longitude.toStringAsFixed(2);
 
-  // send a request to the weather api to get forecast details
+  // Send a request to the weather API to get forecast details
   String forecastUrl = "https://api.weather.gov/points/$lat,$long";
   http.Response forecastResponse = await http.get(Uri.parse(forecastUrl));
   final Map<String, dynamic> forecastJson = jsonDecode(forecastResponse.body);
 
-  // grabs the forecasts url from the json response
+  // Grabs the forecasts URL from the JSON response
   final String currentForecastsUrl = hourly
       ? forecastJson["properties"]["forecastHourly"]
       : forecastJson["properties"]["forecast"];
 
-  // send another request to the API which will return the specifics of the twice-daily forecasts
+  // Send another request to the API which will return the specifics of the forecasts
   http.Response currentForecastsResponse =
       await http.get(Uri.parse(currentForecastsUrl));
   final Map<String, dynamic> currentForecastsJson =
       jsonDecode(currentForecastsResponse.body);
 
-  // gets the list of forecasts from the forecast request
+  // Gets the list of forecasts from the forecast request
   List<dynamic> forecastJsons = currentForecastsJson["properties"]["periods"];
 
-  // uses json data to create list of WeatherForecast objects
+  // Use JSON data to create list of WeatherForecast objects
   List<WeatherForecast> forecasts = [];
   for (final forecastJson in forecastJsons) {
     forecasts.add(WeatherForecast.fromJson(forecastJson));
   }
 
   return forecasts;
+}
+
+Future<List<WeatherForecast>> getWeeklyForecasts(UserLocation location) async {
+  // Casts latitude and longitude to strings with 2 fixed digits
+  String lat = location.latitude.toStringAsFixed(2);
+  String long = location.longitude.toStringAsFixed(2);
+
+  // Send a request to the weather API to get weekly forecast details
+  String weeklyForecastUrl = "https://api.weather.gov/gridpoints/PDT/$lat,$long/forecast";
+  http.Response weeklyForecastResponse = await http.get(Uri.parse(weeklyForecastUrl));
+  final Map<String, dynamic> weeklyForecastJson = jsonDecode(weeklyForecastResponse.body);
+
+  // Gets the list of forecast periods from the weekly forecast JSON response
+  List<dynamic> forecastPeriods = weeklyForecastJson["properties"]["periods"];
+
+  // Use JSON data to create list of WeatherForecast objects for weekly forecast
+  List<WeatherForecast> weeklyForecasts = [];
+  for (final forecastPeriod in forecastPeriods) {
+    weeklyForecasts.add(WeatherForecast.fromJson(forecastPeriod));
+  }
+
+  return weeklyForecasts;
 }
